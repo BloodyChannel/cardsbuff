@@ -1,14 +1,756 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>MineBuff Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CradsBuff — Коллекционная игра</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: radial-gradient(circle at 10% 20%, #0f0c1f, #050308);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            color: #f0eef7;
+        }
+
+        .app {
+            max-width: 550px;
+            margin: 0 auto;
+            background: rgba(8, 6, 16, 0.92);
+            backdrop-filter: blur(4px);
+            min-height: 100vh;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #0a0715, #0c0a18);
+            border-bottom: 1px solid rgba(255, 70, 70, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+        .logo-box { display: flex; align-items: center; gap: 8px; }
+        .logo-icon { font-size: 1.7rem; filter: drop-shadow(0 0 4px #ff4444); }
+        .logo-text { font-weight: 800; font-size: 1.2rem; background: linear-gradient(135deg, #ff8a8a, #ff3a3a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        
+        .burger-btn {
+            background: rgba(255, 60, 60, 0.2);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        .burger-btn span { width: 24px; height: 2px; background: #ffbcbc; border-radius: 4px; }
+        .burger-btn:active { transform: scale(0.96); background: rgba(255,80,80,0.5); }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: linear-gradient(145deg, #100c1c, #0a0715);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            transition: left 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            padding: 70px 20px 30px;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.7);
+            border-right: 1px solid rgba(255,80,80,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .side-menu.open { left: 0; }
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.2s;
+        }
+        .menu-overlay.active { opacity: 1; visibility: visible; }
+        .menu-item {
+            background: rgba(255, 70, 70, 0.1);
+            border: none;
+            padding: 12px 18px;
+            border-radius: 28px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: left;
+            color: #ffe0e0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            cursor: pointer;
+            border-left: 3px solid #ff5a5a;
+            transition: 0.1s;
+        }
+        .menu-item:active { transform: scale(0.97); background: rgba(255,100,100,0.3);}
+        .menu-item.locked { opacity: 0.5; pointer-events: none; border-left-color: #666; filter: grayscale(0.3); }
+
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.4);
+            border-bottom: 1px solid #3a2a2a;
+        }
+        .stat-card {
+            background: #19152a;
+            border-radius: 32px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid #ff5a5a60;
+        }
+        .stat-value { color: #ffbc8c; font-size: 0.9rem; margin-left: 4px; }
+
+        .level-bar {
+            background: rgba(0,0,0,0.4);
+            padding: 8px 16px;
+            border-bottom: 1px solid rgba(255,80,80,0.2);
+        }
+        .level-card {
+            background: linear-gradient(135deg, #ffaa33, #cc8833);
+            border: none;
+            border-radius: 25px;
+            padding: 6px 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            color: #1a0f1a;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 16px;
+            flex: 1;
+            animation: fade 0.2s ease;
+        }
+        .tab-content.active { display: block; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        .section-card {
+            background: rgba(20, 15, 30, 0.7);
+            border-radius: 28px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 100, 70, 0.4);
+        }
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffbc8c;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff4a4a, #aa2020);
+            border: none;
+            padding: 12px;
+            border-radius: 44px;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            color: white;
+            cursor: pointer;
+            transition: 0.1s;
+            text-align: center;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary.disabled { opacity: 0.5; pointer-events: none; }
+        .btn-secondary { background: linear-gradient(135deg, #ffaa33, #dd8822); color: #1f1200; }
+
+        .pack-description {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 12px;
+            margin: 12px 0;
+            border-left: 3px solid #ffaa66;
+        }
+        .pack-description p { font-size: 0.75rem; margin-bottom: 8px; line-height: 1.4; }
+        .pack-rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 0.65rem; color: #aa8899; }
+        .pack-rules span { background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 20px; }
+
+        .mine-button-wrapper { display: flex; justify-content: center; margin: 20px 0; }
+        .mine-circle-btn {
+            width: 140px; height: 140px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #5a3a2a, #2a1a0a);
+            border: 4px solid #ffaa44;
+            box-shadow: 0 0 20px rgba(255, 170, 68, 0.5);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: 0.05s linear;
+            position: relative;
+            overflow: hidden;
+        }
+        .mine-circle-btn:active { transform: scale(0.94); }
+        .mine-icon { font-size: 4rem; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5)); }
+        .mine-particles { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+        .clicks-info { text-align: center; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 30px; margin: 10px 0; }
+
+        .grid-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; max-height: 55vh; overflow-y: auto; padding-bottom: 8px; }
+        .card-item {
+            background: #161224; border-radius: 20px; padding: 8px; width: calc(33% - 8px);
+            min-width: 95px; text-align: center; border-left: 3px solid; position: relative; cursor: pointer;
+        }
+        .card-img { width: 70px; height: 70px; object-fit: cover; border-radius: 14px; background: #2a233a; }
+        .card-name { font-size: 0.7rem; font-weight: bold; margin: 5px 0; color: #ffe2c2; word-break: break-word; }
+        .rank-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; background: #333; }
+        .owned-badge { position: absolute; top: 4px; left: 4px; background: #3a7741; font-size: 0.6rem; padding: 2px 6px; border-radius: 20px; }
+
+        .choice-area { background: #1f1a2e; border-radius: 28px; padding: 16px; margin-top: 12px; }
+        .choice-flex { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .choice-card {
+            background: #292240; border-radius: 24px; padding: 10px; width: 110px;
+            text-align: center; cursor: pointer; border: 2px solid #ff8866; position: relative;
+        }
+        .choice-card.selected { border: 3px solid gold; background: #3a2f55; transform: scale(1.02); }
+        .choice-img { width: 70px; height: 70px; object-fit: cover; border-radius: 12px; background: #2a233a; }
+        .choice-owned { position: absolute; top: 5px; left: 5px; background: #3a7741; font-size: 0.6rem; padding: 2px 6px; border-radius: 20px; color: white; }
+        .choice-title { font-size: 0.55rem; color: #88aaff; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .filter-bar { display: flex; gap: 6px; overflow-x: auto; padding: 6px 0; margin-bottom: 12px; scrollbar-width: thin; }
+        .filter-chip { background: #2a2338; padding: 6px 14px; border-radius: 40px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .filter-chip.active { background: #ff4a4a; color: white; }
+
+        .progress-bar { background: #2a2538; border-radius: 20px; height: 8px; overflow: hidden; margin: 8px 0; }
+        .progress-fill { background: linear-gradient(90deg, #ffaa44, #ff4444); width: 0%; height: 100%; }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); z-index: 1000; justify-content: center;
+            align-items: center; backdrop-filter: blur(10px);
+        }
+        .modal.active { display: flex; }
+        .modal-content { position: relative; max-width: 90vw; max-height: 90vh; text-align: center; animation: zoomIn 0.2s ease; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-image { max-width: 85vw; max-height: 70vh; object-fit: contain; border-radius: 20px; border: 2px solid rgba(255,100,100,0.5); background: #2a233a; }
+        .modal-close { position: absolute; top: -40px; right: -10px; background: rgba(255,80,80,0.9); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+        .modal-caption { margin-top: 15px; color: #FFE7B6; font-size: 1.2rem; font-weight: bold; }
+        .modal-rank { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 25px; font-size: 1rem; font-weight: 900; background: #333; }
+
+        .event-timer-block { background: rgba(0,0,0,0.3); border-radius: 20px; padding: 8px 12px; text-align: center; margin-bottom: 12px; }
+        .event-timer-value { font-size: 1rem; font-weight: bold; font-family: monospace; color: #ffaa66; }
+        .daily-timer { font-size: 0.7rem; color: #aa8899; margin-top: 5px; text-align: center; }
+        .footer-note { text-align: center; font-size: 0.6rem; color: #886e8e; padding: 16px; }
+        .event-notice { font-size: 0.7rem; color: #ffaa66; text-align: center; margin-top: 10px; }
+
+        @media (max-width: 450px) {
+            .card-img { width: 60px; height: 60px; }
+            .card-item { min-width: 85px; }
+            .choice-img { width: 60px; height: 60px; }
+            .choice-card { width: 100px; }
+            .mine-circle-btn { width: 120px; height: 120px; }
+            .mine-icon { font-size: 3.2rem; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello, GitHub Pages!</h1>
-    <p>If you see this, your site is working.</p>
-    <p>Time: <span id="time"></span></p>
-    <script>
-        document.getElementById('time').innerText = new Date().toLocaleString();
-    </script>
+<div class="app">
+    <div class="header">
+        <div class="logo-box"><div class="logo-icon">🩸</div><div class="logo-text">CARDSBUFF</div></div>
+        <button class="burger-btn" id="burgerBtn"><span></span><span></span><span></span></button>
+    </div>
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-item" data-tab="profile">👤 Профиль</div>
+        <div class="menu-item" data-tab="mine">⛏️ Шахта</div>
+        <div class="menu-item" data-tab="pack">🎴 Паки</div>
+        <div class="menu-item" data-tab="event" id="eventMenuItem">🎪 Ивент</div>
+        <div class="menu-item" data-tab="collection">📚 Мои карты</div>
+        <div class="menu-item" data-tab="allcards">📖 Каталог</div>
+        <div class="menu-item" data-tab="decks">🃏 Колоды</div>
+        <div class="footer-note" style="margin-top: auto;">@b_loody</div>
+    </div>
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="stats-row">
+        <div class="stat-card">💎 <span class="stat-value" id="crystalVal">0</span></div>
+        <div class="stat-card">⚡ <span class="stat-value" id="shardVal">0</span></div>
+        <div class="stat-card">⛏️ <span class="stat-value" id="oreVal">0</span></div>
+        <div class="stat-card">📚 <span class="stat-value" id="totalCards">0</span></div>
+    </div>
+    <div class="level-bar"><div class="level-card">⭐ Уровень <span id="lvlVal">1</span> | <span id="expTxt">0/100</span></div></div>
+
+    <div id="tab-profile" class="tab-content">
+        <div class="section-card">
+            <div class="section-title">🎁 Ежедневный бонус</div>
+            <button class="btn-primary" id="dailyBtn">+30 💎</button>
+            <div class="daily-timer" id="dailyTimer"></div>
+        </div>
+    </div>
+    <div id="tab-mine" class="tab-content">
+        <div class="section-card">
+            <div class="section-title">⛏️ Кровавая шахта</div>
+            <div class="clicks-info">⚡ Кликов сегодня: <span id="clicksLeft">0</span> / <span id="maxClicks">100</span></div>
+            <div class="mine-button-wrapper"><div class="mine-circle-btn" id="mineBtn"><div class="mine-icon">⛏️</div><div class="mine-particles" id="mineParticles"></div></div></div>
+            <div class="clicks-info">💎 Руды: <strong id="oreAmount">0</strong></div>
+            <button class="btn-primary btn-secondary" id="exchangeBtn">🔄 Обменять 100 руды → 1💎</button>
+        </div>
+    </div>
+    <div id="tab-pack" class="tab-content">
+        <div class="section-card">
+            <div class="section-title">🎴 Кровавые паки</div>
+            <div class="pack-description"><p><strong>📦 Что такое пак?</strong> Пак — это набор из <strong>3 случайных карт</strong>. Выбирайте 1 карту. <strong style="color:#ffaa66;">✨ Дубликат = 7💎</strong></p><div class="pack-rules"><span>🎴 3 карты</span><span>✨ Дубликат = 7💎</span><span>🎲 Выбор 1 карты</span></div></div>
+            <button class="btn-primary" id="buyPackBtn">🎁 КУПИТЬ ПАК ЗА 70💎</button>
+            <div id="packChoiceArea" class="choice-area" style="display:none;"><div>🎲 ВЫБЕРИ ОДНУ КАРТУ</div><div id="choiceContainer" class="choice-flex"></div><button class="btn-primary" id="confirmChoiceBtn" disabled>✅ Забрать карту</button></div>
+        </div>
+    </div>
+    <div id="tab-event" class="tab-content">
+        <div class="section-card" style="border-color:#ffaa66;">
+            <div class="section-title">🎪 ИВЕНТОВЫЙ ПАК</div>
+            <div class="event-timer-block"><div class="event-timer-value" id="eventTimerDisplay">--:--:--</div></div>
+            <div class="pack-description"><p><strong>🎪 Уникальные ивент-карты!</strong> Только активный сезон (ранги V, H, N, L).</p><div class="pack-rules"><span>🎴 1 карта</span><span>🌸 20 ивент-валюты</span><span>🔄 Дубликат = 7💎</span></div></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;"><span>🎪</span><span id="eventCurrencyDisplay" style="font-size: 1.2rem; font-weight: bold; color: #ffaa66;">🌸 0</span></div>
+            </div>
+            <button class="btn-primary" id="eventPackBtn" style="background: radial-gradient(circle at 30% 10%, #ff8833, #cc6622);">🎪 ОТКРЫТЬ ЗА 20🌸</button>
+            <div id="eventChoiceArea" class="choice-area" style="display:none;"><div>🎪 ВЫБЕРИ ИВЕНТ-КАРТУ</div><div id="eventChoiceContainer" class="choice-flex"></div><button class="btn-primary" id="confirmEventBtn" disabled>✅ Забрать карту</button></div>
+            <div id="eventNotice" class="event-notice"></div>
+        </div>
+    </div>
+    <div id="tab-collection" class="tab-content"><div class="filter-bar" id="collectionFilter"></div><div id="collectionGrid" class="grid-cards"></div></div>
+    <div id="tab-allcards" class="tab-content"><div class="filter-bar" id="catalogFilter"></div><div id="catalogGrid" class="grid-cards"></div></div>
+    <div id="tab-decks" class="tab-content"><div id="decksContainer"></div></div>
+</div>
+<div id="imageModal" class="modal"><div class="modal-content"><button class="modal-close" id="modalCloseBtn">✕</button><img id="modalImage" class="modal-image" src=""><div id="modalCaption" class="modal-caption"></div><div id="modalRank" class="modal-rank"></div></div></div>
+
+<script src="cards.js"></script>
+<script>
+    // ========== ИСПОЛЬЗУЕМ ГОТОВЫЙ ALL_CARDS ИЗ cards.js ==========
+    const ALL_RAW_CARDS = (typeof ALL_CARDS !== 'undefined' ? ALL_CARDS : []);
+    
+    // Фильтр: убираем A+ (не используем) + все карты с полем season (ивент) для обычных паков
+    // Также исключаем Q ранг из обычных паков
+    const DISPLAY_CARDS = ALL_RAW_CARDS.filter(card => card.rank !== "A+");
+    
+    // Ранги которые считаются ивентовыми: V, H, N, L (только они выпадают в ивент-паках)
+    const EVENT_RANKS = ["V", "H", "N", "L"];
+    
+    // Обычные карты: НЕ ивентовые (no season) И ранг НЕ Q
+    const REGULAR_CARDS = DISPLAY_CARDS.filter(card => !card.season && card.rank !== "Q");
+    
+    // Ивентовые карты по сезону + дополнительная фильтрация по рангам V,H,N,L
+    function getEventCardsBySeason(seasonKey) {
+        return DISPLAY_CARDS.filter(card => card.season === seasonKey && EVENT_RANKS.includes(card.rank));
+    }
+    
+    const RANK_ORDER = ["X", "S", "A", "P", "G", "B", "C", "D", "E", "H", "N", "V", "L", "Q"];
+    
+    // ========== ДАТЫ СЕЗОНОВ ==========
+    const SEASONS = {
+        spring: { name: "🌸 Весна", startMonth: 2, startDay: 20, endMonth: 3, endDay: 20, currencyEmoji: "🌸", nextDate: "20 марта" },
+        summer: { name: "☀️ Лето", startMonth: 5, startDay: 20, endMonth: 6, endDay: 20, currencyEmoji: "🐚", nextDate: "20 июня" },
+        halloween: { name: "🎃 Хэллоуин", startMonth: 9, startDay: 20, endMonth: 10, endDay: 3, currencyEmoji: "🎃", nextDate: "20 октября" },
+        newyear: { name: "🎄 Новый год", startMonth: 11, startDay: 20, endMonth: 0, endDay: 31, currencyEmoji: "❄️", nextDate: "20 декабря" }
+    };
+    
+    function getCurrentSeason() {
+        const now = new Date();
+        const month = now.getMonth();
+        const day = now.getDate();
+        for (const [key, season] of Object.entries(SEASONS)) {
+            if (key === 'newyear') {
+                if ((month === 11 && day >= season.startDay) || (month === 0 && day <= season.endDay)) return key;
+            } else {
+                let inSeason = false;
+                if (month === season.startMonth && day >= season.startDay) inSeason = true;
+                if (month > season.startMonth && month < season.endMonth) inSeason = true;
+                if (month === season.endMonth && day <= season.endDay) inSeason = true;
+                if (inSeason) return key;
+            }
+        }
+        return null;
+    }
+    
+    function getNextSeasonInfo() {
+        const now = new Date();
+        const month = now.getMonth();
+        const day = now.getDate();
+        for (const [key, season] of Object.entries(SEASONS)) {
+            let seasonStartPassed = false;
+            if (key === 'newyear') {
+                if (month < 11 || (month === 11 && day < season.startDay)) seasonStartPassed = false;
+                else seasonStartPassed = true;
+            } else {
+                if (month > season.endMonth || (month === season.endMonth && day > season.endDay)) seasonStartPassed = true;
+                else if (month < season.startMonth || (month === season.startMonth && day < season.startDay)) seasonStartPassed = false;
+                else seasonStartPassed = true;
+            }
+            if (!seasonStartPassed) return { name: season.name, date: `${season.startDay} числа ${season.startMonth === 2 ? 'марта' : season.startMonth === 5 ? 'июня' : season.startMonth === 9 ? 'октября' : 'декабря'}` };
+        }
+        return { name: "Весна", date: "20 марта" };
+    }
+    
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let crystals = 40, shards = 0, ore = 0;
+    let dailyLastClaim = null;
+    let miningClicksToday = 0, miningLastDate = new Date().toDateString();
+    let collectionMap = new Map();
+    let usedDecksReward = new Set();
+    let currentOffered = [], selectedIdx = null;
+    let currentEventOffered = [], selectedEventIdx = null;
+    let eventCurrency = { spring: 5, halloween: 0, newyear: 0, summer: 0 };
+    let currentLevel = 1, currentExp = 0;
+    let currentSeason = getCurrentSeason();
+    let eventActive = currentSeason !== null;
+    const LEVEL_REQ = {1:0,2:100,3:220,4:360,5:520,6:700,7:900,8:1150,9:1450,10:1800};
+    
+    const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%232a233a'/%3E%3Ctext x='30' y='35' font-size='24' text-anchor='middle' fill='%23666'%3E🎴%3C/text%3E%3C/svg%3E";
+    
+    // ========== ГЛОБАЛЬНЫЙ КЭШ — ОДИН ОБЪЕКТ НА КАРТИНКУ ==========
+    const imageCache = new Map();
+    
+    function getCachedImage(url) {
+        if (!url || url === PLACEHOLDER) return null;
+        if (imageCache.has(url)) return imageCache.get(url);
+        return null;
+    }
+    
+    function preloadAndCacheImage(url) {
+        if (!url || url === PLACEHOLDER) return null;
+        if (imageCache.has(url)) return imageCache.get(url);
+        const img = new Image();
+        img.src = url;
+        imageCache.set(url, img);
+        return img;
+    }
+    
+    function setImageFromCacheOrLoad(imgElement, url) {
+        if (!url || url === PLACEHOLDER) { imgElement.src = PLACEHOLDER; return; }
+        const cached = getCachedImage(url);
+        if (cached) { imgElement.src = cached.src; return; }
+        imgElement.src = PLACEHOLDER;
+        preloadAndCacheImage(url);
+        const tempImg = new Image();
+        tempImg.onload = () => { if (imgElement.src !== tempImg.src) imgElement.src = tempImg.src; };
+        tempImg.src = url;
+    }
+    
+    function getCardImage(card) { return (card && card.image) ? card.image : PLACEHOLDER; }
+    
+    function renderCatalogOnce() { 
+        let arr = [...DISPLAY_CARDS]; 
+        arr.sort((a,b)=> (RANK_ORDER.indexOf(a.rank) - RANK_ORDER.indexOf(b.rank))); 
+        arr.forEach(card => { const imgSrc = getCardImage(card); if (imgSrc !== PLACEHOLDER) preloadAndCacheImage(imgSrc); });
+        let html = arr.map(c => { 
+            let owned = collectionMap.has(c.id);
+            const imgSrc = getCardImage(c);
+            const cachedImg = getCachedImage(imgSrc);
+            const imgHtml = cachedImg ? `<img class="card-img" src="${cachedImg.src}">` : `<img class="card-img" src="${PLACEHOLDER}" data-src="${imgSrc}">`;
+            return `<div class="card-item" style="border-left-color:${c.color}" data-id="${c.id}" data-name="${c.name}" data-rank="${c.rankLabel}" data-image="${imgSrc}" data-set="${c.set || 'Обычная'}">
+                ${owned ? '<div class="owned-badge">✔️</div>' : '<div class="owned-badge" style="background:#442222;">❌</div>'}
+                ${imgHtml}
+                <div class="card-name">${c.name}</div>
+                <div class="rank-badge">${c.rankLabel}</div>
+            </div>`; 
+        }).join('');
+        document.getElementById("catalogGrid").innerHTML = html; 
+        document.querySelectorAll("#catalogGrid .card-img[data-src]").forEach(img => {
+            const src = img.dataset.src;
+            if (src && src !== PLACEHOLDER) {
+                const cached = getCachedImage(src);
+                if (cached) { img.src = cached.src; img.removeAttribute('data-src'); } 
+                else { preloadAndCacheImage(src); const temp = new Image(); temp.onload = () => { img.src = temp.src; img.removeAttribute('data-src'); }; temp.src = src; }
+            }
+        });
+		document.querySelectorAll("#catalogGrid .card-item").forEach(el => { 
+			const name = el.dataset.name, rank = el.dataset.rank, image = el.dataset.image, set = el.dataset.set; 
+			el.addEventListener("click", () => showModal(image, name, rank, set)); 
+		});
+    }
+    
+    function renderCollectionOnce() { 
+        let arr = Array.from(collectionMap.values()).map(v=>v.cardData); 
+        arr.sort((a,b)=> (RANK_ORDER.indexOf(a.rank) - RANK_ORDER.indexOf(b.rank))); 
+        let html = arr.map(c => {
+            const imgSrc = getCardImage(c);
+            const cachedImg = getCachedImage(imgSrc);
+            const imgHtml = cachedImg ? `<img class="card-img" src="${cachedImg.src}">` : `<img class="card-img" src="${PLACEHOLDER}">`;
+            return `<div class="card-item" style="border-left-color:${c.color}" data-id="${c.id}" data-name="${c.name}" data-rank="${c.rankLabel}" data-image="${imgSrc}" data-set="${c.set || 'Обычная'}">
+                <div class="owned-badge">✔️</div>
+                ${imgHtml}
+                <div class="card-name">${c.name}</div>
+                <div class="rank-badge">${c.rankLabel}</div>
+            </div>`;
+        }).join('');
+        document.getElementById("collectionGrid").innerHTML = html || "<div style='text-align:center'>Пусто</div>";
+        document.querySelectorAll("#collectionGrid .card-item").forEach(el => { 
+            const name = el.dataset.name, rank = el.dataset.rank, image = el.dataset.image, set = el.dataset.set; 
+            el.addEventListener("click", () => showModal(image, name, rank, set)); 
+        });
+        document.getElementById("totalCards").innerText = collectionMap.size; 
+    }
+    
+	function renderDecks() { 
+		let container = document.getElementById("decksContainer"); 
+		let deckSets = ['Эхокалипсис', 'Лазурный Путь', 'Геншинский удар']; // добавьте вашу колоду сюда
+		
+		// Объект с эмодзи для каждой колоды
+		const deckEmojis = {
+			'Эхокалипсис': '🔮',
+			'Лазурный Путь': '🌊',
+			'Геншинский удар': '✨'  // добавьте нужный эмодзи
+		};
+		
+		let html = ""; 
+		for(let set of deckSets) { 
+			let setCards = DISPLAY_CARDS.filter(c=>c.set === set); 
+			let ownedCnt = setCards.filter(c=>collectionMap.has(c.id)).length; 
+			let total = setCards.length; 
+			let percent = total? (ownedCnt/total)*100:0; 
+			let claimed = usedDecksReward.has(set);
+			const emoji = deckEmojis[set] || '🃏'; // дефолтный эмодзи, если колода не найдена
+			
+			html += `<div class="section-card">
+				<div class="section-title">${emoji} ${set}</div>
+				<div>Прогресс: ${ownedCnt}/${total}</div>
+				<div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+				${ownedCnt===total && !claimed ? `<button class="btn-primary btn-secondary" data-deck="${set}">🎁 Забрать награду (+100💎 +10⚡)</button>` : (claimed?"✅ Награда получена":"")}
+			</div>`; 
+		} 
+		container.innerHTML = html; 
+        document.querySelectorAll("[data-deck]").forEach(btn=>{ btn.addEventListener("click",()=>{ let set=btn.dataset.set; if(!usedDecksReward.has(set)){ let setCards=DISPLAY_CARDS.filter(c=>c.set===set); if(setCards.every(c=>collectionMap.has(c.id))){ crystals+=100; shards+=10; usedDecksReward.add(set); updateStatsOnly(); renderDecks(); saveGame(); showToast(`🏆 Колода "${set}" завершена!`); } } }); }); 
+    }
+    
+    function setupCollectionFilter() { /* без изменений */ 
+        const container = document.getElementById("collectionFilter");
+        const ranks = ["all", ...RANK_ORDER];
+        container.innerHTML = ranks.map(r => `<div class="filter-chip ${r === 'all' ? 'active' : ''}" data-filter="${r}">${r.toUpperCase()}</div>`).join('');
+        container.querySelectorAll(".filter-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                container.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+                chip.classList.add("active");
+                const filter = chip.dataset.filter;
+                document.querySelectorAll("#collectionGrid .card-item").forEach(card => {
+                    if (filter === "all") card.style.display = "";
+                    else { const rank = card.querySelector(".rank-badge")?.innerText; card.style.display = rank === filter ? "" : "none"; }
+                });
+            });
+        });
+    }
+    
+    function renderPackChoice() { /* без изменений */ 
+        const container = document.getElementById("choiceContainer");
+        if(!container) return;
+        container.innerHTML = currentOffered.map((card,i) => {
+            const isOwned = collectionMap.has(card.id);
+            const imgSrc = getCardImage(card);
+            const cachedImg = getCachedImage(imgSrc);
+            const imgHtml = cachedImg ? `<img class="choice-img" src="${cachedImg.src}">` : `<img class="choice-img" src="${PLACEHOLDER}" data-src="${imgSrc}">`;
+            return `<div class="choice-card" data-idx="${i}" style="border-color:${card.color}">
+                ${isOwned ? '<div class="choice-owned">✅ Есть</div>' : ''}
+                ${imgHtml}
+                <div class="card-name">${card.name}</div><div class="rank-badge" style="background:${card.color}">${card.rankLabel}</div>
+                <div class="choice-title">📚 ${card.set || 'Обычная'}</div>
+            </div>`;
+        }).join('');
+        document.querySelectorAll("#choiceContainer .choice-img[data-src]").forEach(img => { /* load logic */ 
+            const src = img.dataset.src;
+            if (src && src !== PLACEHOLDER) {
+                const cached = getCachedImage(src);
+                if (cached) { img.src = cached.src; img.removeAttribute('data-src'); } 
+                else { preloadAndCacheImage(src); const temp = new Image(); temp.onload = () => { img.src = temp.src; img.removeAttribute('data-src'); }; temp.src = src; }
+            }
+        });
+        document.querySelectorAll(".choice-card").forEach(el=>{ el.addEventListener("click",()=>{ selectedIdx = parseInt(el.dataset.idx); document.querySelectorAll(".choice-card").forEach(c=>c.classList.remove("selected")); el.classList.add("selected"); document.getElementById("confirmChoiceBtn").disabled = false; }); });
+    }
+    
+    function renderEventChoice() { 
+        let container = document.getElementById("eventChoiceContainer");
+        container.innerHTML = currentEventOffered.map((card,i) => { 
+            const isOwned = collectionMap.has(card.id); 
+            const imgSrc = getCardImage(card);
+            const cachedImg = getCachedImage(imgSrc);
+            const imgHtml = cachedImg ? `<img class="choice-img" src="${cachedImg.src}">` : `<img class="choice-img" src="${PLACEHOLDER}" data-src="${imgSrc}">`;
+            return `<div class="choice-card" data-idx="${i}" style="border-color:#ffaa66">
+                ${isOwned ? '<div class="choice-owned">✅ Есть</div>' : ''}
+                ${imgHtml}
+                <div class="card-name">${card.name}</div><div class="rank-badge">${card.rankLabel}</div>
+                <div class="choice-title">🎪 ${card.set || 'Ивент'}</div>
+            </div>`; 
+        }).join(''); 
+        document.querySelectorAll("#eventChoiceContainer .choice-img[data-src]").forEach(img => { /* load */ 
+            const src = img.dataset.src;
+            if (src && src !== PLACEHOLDER) {
+                const cached = getCachedImage(src);
+                if (cached) { img.src = cached.src; img.removeAttribute('data-src'); } 
+                else { preloadAndCacheImage(src); const temp = new Image(); temp.onload = () => { img.src = temp.src; img.removeAttribute('data-src'); }; temp.src = src; }
+            }
+        });
+        document.querySelectorAll("#eventChoiceContainer .choice-card").forEach(el=>{ el.addEventListener("click",()=>{ selectedEventIdx = parseInt(el.dataset.idx); document.querySelectorAll("#eventChoiceContainer .choice-card").forEach(c=>c.classList.remove("selected")); el.classList.add("selected"); document.getElementById("confirmEventBtn").disabled = false; }); }); 
+    }
+    
+    function showModal(imageUrl, cardName, rank, set) { 
+        const modal = document.getElementById('imageModal'); const modalImg = document.getElementById('modalImage');
+        const cached = getCachedImage(imageUrl);
+        if (cached) modalImg.src = cached.src;
+        else { modalImg.src = PLACEHOLDER; const temp = new Image(); temp.onload = () => { modalImg.src = temp.src; imageCache.set(imageUrl, temp); }; temp.src = imageUrl; }
+        document.getElementById('modalCaption').innerHTML = `${cardName}<br><span style="font-size:0.8rem; color:#88aaff;">📚 ${set || 'Обычная'}</span>`; 
+        document.getElementById('modalRank').innerText = rank; modal.classList.add('active'); 
+    }
+    
+    // ========== ОСНОВНЫЕ ИГРОВЫЕ МЕХАНИКИ ==========
+    function getEventCurrency() { return eventCurrency[currentSeason] || 0; }
+    function addEventCurrency(amount) { if(currentSeason) { eventCurrency[currentSeason] = (eventCurrency[currentSeason] || 0) + amount; updateStatsOnly(); saveGame(); } }
+    function spendEventCurrency(amount) { if(getEventCurrency() >= amount) { eventCurrency[currentSeason] -= amount; updateStatsOnly(); saveGame(); return true; } return false; }
+    function getMaxMineClicks() { return 100 + Math.floor(currentLevel * 2); }
+    
+    function addExp(amount) { 
+        currentExp += amount; 
+        let needed = LEVEL_REQ[currentLevel+1] || 9999; 
+        while(currentExp >= needed && currentLevel<10){ 
+            currentLevel++; currentExp -= needed; needed = LEVEL_REQ[currentLevel+1] || 9999; showToast(`🎉 УРОВЕНЬ ${currentLevel}!`); 
+        } updateStatsOnly(); saveGame(); 
+    }
+    
+    function getRandomPackCard() {
+        if(REGULAR_CARDS.length === 0) return {...DISPLAY_CARDS[0]};
+        return {...REGULAR_CARDS[Math.floor(Math.random()*REGULAR_CARDS.length)]};
+    }
+    
+    function generatePack() { let arr=[]; while(arr.length<3){ let c= getRandomPackCard(); if(!arr.some(x=>x.id===c.id)) arr.push(c); } return arr; }
+    
+    function getRandomEventCard() { 
+        let pool = getEventCardsBySeason(currentSeason); 
+        if(pool.length===0) return null; 
+        return {...pool[Math.floor(Math.random()*pool.length)]}; 
+    }
+    
+    function checkDecksCompletion() { /* без изменений */ 
+        const deckMap = { 'Эхокалипсис': 'Эхокалипсис', 'Лазурный Путь': 'Лазурный Путь', 'Геншинский удар': 'Геншинский удар' };
+        for(let [setName, deckId] of Object.entries(deckMap)) {
+            if(usedDecksReward.has(deckId)) continue;
+            let cardsInSet = DISPLAY_CARDS.filter(c => c.set === setName);
+            let ownedCount = cardsInSet.filter(c => collectionMap.has(c.id)).length;
+            if(ownedCount === cardsInSet.length && cardsInSet.length>0) {
+                crystals += 100; shards += 10; usedDecksReward.add(deckId); showToast(`🎉 Колода "${setName}" собрана! +100💎 +10⚡`);
+                updateStatsOnly(); renderDecks(); saveGame();
+            }
+        }
+    }
+    
+    function addCardToCollection(card) {
+        if(collectionMap.has(card.id)) { crystals += 7; showToast(`🔄 Дубликат! +7💎 за "${card.name}"`); } 
+        else { collectionMap.set(card.id, { cardData: card, animated: false }); addExp(10); showToast(`✨ Новая карта: ${card.name}!`); checkDecksCompletion(); updateCardOwnedStatus(card.id); }
+        updateStatsOnly(); saveGame(); 
+    }
+    
+    function updateCardOwnedStatus(cardId) { /* упрощённо */ const catalogDiv = document.querySelector(`#catalogGrid .card-item[data-id="${cardId}"] .owned-badge`); if(catalogDiv){ catalogDiv.innerHTML='✔️'; catalogDiv.style.background='#3a7741'; } document.getElementById("totalCards").innerText = collectionMap.size; }
+    
+    function createMineParticles() { /* без изменений */ const particles = document.getElementById('mineParticles'); if(!particles) return; for(let i=0;i<8;i++) { const p = document.createElement('span'); p.innerHTML = '⛏️'; p.style.position = 'absolute'; p.style.fontSize = '1.2rem'; p.style.left = '50%'; p.style.top = '50%'; p.style.pointerEvents = 'none'; p.style.opacity = '1'; p.style.transition = 'all 0.4s ease-out'; const angle = Math.random() * Math.PI * 2; const dist = 40 + Math.random() * 30; const x = Math.cos(angle) * dist; const y = Math.sin(angle) * dist; particles.appendChild(p); requestAnimationFrame(() => { p.style.transform = `translate(${x}px, ${y}px)`; p.style.opacity = '0'; }); setTimeout(() => p.remove(), 400); } }
+    
+    function buyPack() { if(crystals < 70) { showToast("❌ Не хватает кристаллов!"); return; } if(currentOffered.length>0) { showToast("Сначала выбери карту из открытого пака"); return; } crystals -= 70; currentOffered = generatePack(); selectedIdx = null; document.getElementById("packChoiceArea").style.display = "block"; renderPackChoice(); updateStatsOnly(); saveGame(); }
+    function confirmPackChoice() { if(selectedIdx===null) return; let chosen = currentOffered[selectedIdx]; addCardToCollection(chosen); currentOffered = []; selectedIdx=null; document.getElementById("packChoiceArea").style.display = "none"; document.getElementById("confirmChoiceBtn").disabled = true; updateStatsOnly(); }
+    
+    function buyEventPack() { 
+        if(!eventActive) { const nextSeason = getNextSeasonInfo(); showToast(`❌ Ивент не активен! Следующий сезон "${nextSeason.name}" начнётся ${nextSeason.date}`); return; } 
+        let price = 20; if(getEventCurrency() < price) { showToast(`❌ Нужно ${price} ивент-валюты`); return; } 
+        if(currentEventOffered.length>0) { showToast("Сначала выберите ивент-карту"); return; } 
+        let card = getRandomEventCard(); if(!card) { showToast("Нет ивент-карт в этом сезоне (нужны ранги V,H,N,L)"); return; } 
+        spendEventCurrency(price); currentEventOffered = [card]; selectedEventIdx = null; document.getElementById("eventChoiceArea").style.display = "block"; renderEventChoice(); updateStatsOnly(); 
+    }
+    
+    function confirmEventChoice() { if(selectedEventIdx===null) return; let card = currentEventOffered[selectedEventIdx]; addCardToCollection(card); currentEventOffered = []; selectedEventIdx=null; document.getElementById("eventChoiceArea").style.display = "none"; document.getElementById("confirmEventBtn").disabled = true; updateStatsOnly(); }
+    
+    function mine() { 
+        let today = new Date().toDateString(); if(miningLastDate !== today) { miningClicksToday = 0; miningLastDate = today; } 
+        let maxC = getMaxMineClicks(); if(miningClicksToday >= maxC) { showToast("Лимит кликов на сегодня"); return; } 
+        let gain = Math.floor(Math.random() * 8) + 10; ore += gain; miningClicksToday++; createMineParticles(); updateStatsOnly(); saveGame(); showToast(`⛏️ +${gain} руды`); 
+    }
+    
+    function exchangeOre() { if(ore < 100) { showToast("Нужно 100 руды"); return; } let exchange = Math.floor(ore / 100); crystals += exchange; ore -= exchange * 100; updateStatsOnly(); saveGame(); showToast(`💎 Обменяно ${exchange}💎`); }
+    function dailyBonus() { let today = new Date().toDateString(); if(dailyLastClaim === today) { showToast("Уже забирал сегодня"); return; } crystals += 30; dailyLastClaim = today; updateStatsOnly(); saveGame(); showToast("🎁 +30 кристаллов!"); updateDailyTimer(); }
+    
+    function updateStatsOnly() {
+        document.getElementById("crystalVal").innerText = crystals; document.getElementById("shardVal").innerText = shards;
+        document.getElementById("oreVal").innerText = ore; document.getElementById("totalCards").innerText = collectionMap.size;
+        document.getElementById("lvlVal").innerText = currentLevel; let nextExp = LEVEL_REQ[currentLevel+1] || currentLevel*120;
+        document.getElementById("expTxt").innerHTML = `${currentExp}/${nextExp}`; document.getElementById("clicksLeft").innerText = miningClicksToday; 
+        document.getElementById("maxClicks").innerText = getMaxMineClicks(); document.getElementById("oreAmount").innerText = ore;
+        if (currentSeason) document.getElementById("eventCurrencyDisplay").innerHTML = `${SEASONS[currentSeason]?.currencyEmoji || '🌸'} ${getEventCurrency()}`;
+        updateDailyTimer(); updateEventUI();
+    }
+    
+    function updateDailyTimer() { /* без изменений */ 
+        const dailyBtn = document.getElementById('dailyBtn'); const timerSpan = document.getElementById('dailyTimer');
+        if (!dailyBtn || !timerSpan) return;
+        const today = new Date().toDateString();
+        if (dailyLastClaim === today) { dailyBtn.disabled = true; dailyBtn.classList.add('disabled'); const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0,0,0,0); const diff = tomorrow - new Date(); const hours = Math.floor(diff / 3600000); const minutes = Math.floor((diff % 3600000) / 60000); timerSpan.innerHTML = `⏰ Следующий бонус через: ${hours}ч ${minutes}м`; } 
+        else { dailyBtn.disabled = false; dailyBtn.classList.remove('disabled'); timerSpan.innerHTML = '✨ Доступно сейчас! Заберите награду ✨'; }
+    }
+    
+    function updateEventUI() {
+        const newSeason = getCurrentSeason(); eventActive = newSeason !== null;
+        if (newSeason !== currentSeason) { currentSeason = newSeason; updateStatsOnly(); }
+        const menuItem = document.getElementById('eventMenuItem'); const eventPackBtn = document.getElementById('eventPackBtn'); const timerDisplay = document.getElementById('eventTimerDisplay'); const eventNotice = document.getElementById('eventNotice');
+        if (!eventActive) {
+            if (menuItem) menuItem.classList.add('locked'); if (eventPackBtn) { eventPackBtn.disabled = true; eventPackBtn.classList.add('disabled'); eventPackBtn.textContent = '🔒 ИВЕНТ НЕ АКТИВЕН'; }
+            if (timerDisplay) timerDisplay.innerHTML = '⛔ Сезон завершён'; const nextSeason = getNextSeasonInfo(); if (eventNotice) eventNotice.innerHTML = `✨ Следующий ивент "${nextSeason.name}" начнётся ${nextSeason.date}`;
+        } else {
+            if (menuItem) menuItem.classList.remove('locked'); if (eventPackBtn) { eventPackBtn.disabled = false; eventPackBtn.classList.remove('disabled'); eventPackBtn.textContent = `🎪 ОТКРЫТЬ ЗА 20${SEASONS[currentSeason]?.currencyEmoji || '🌸'}`; }
+            if (eventNotice) eventNotice.innerHTML = ''; updateEventTimer();
+        }
+        const currencySpan = document.getElementById('eventCurrencyDisplay'); if (currencySpan && currentSeason) currencySpan.innerHTML = `${SEASONS[currentSeason]?.currencyEmoji || '🌸'} ${getEventCurrency()}`;
+    }
+    
+    function updateEventTimer() { if (!eventActive || !currentSeason) return; const season = SEASONS[currentSeason]; const now = new Date(); let endDate = new Date(); if (currentSeason === 'newyear') endDate = new Date(now.getFullYear() + (now.getMonth() === 11 ? 1 : 0), season.endMonth, season.endDay, 23,59,59); else { endDate = new Date(now.getFullYear(), season.endMonth, season.endDay, 23,59,59); if (endDate < now) endDate.setFullYear(now.getFullYear() + 1); } const diff = endDate - now; if (diff <= 0) { eventActive = false; updateEventUI(); return; } const days = Math.floor(diff / (1000*60*60*24)); const hours = Math.floor((diff % 86400000) / 3600000); const minutes = Math.floor((diff % 3600000) / 60000); const timerDisplay = document.getElementById('eventTimerDisplay'); if (timerDisplay) timerDisplay.innerHTML = days > 0 ? `⏳ Осталось: ${days}д ${hours}ч ${minutes}м` : `⏳ Осталось: ${hours}ч ${minutes}м`; }
+    
+    function closeModal() { document.getElementById('imageModal').classList.remove('active'); }
+    function saveGame() { let save = { crystals, shards, ore, dailyLastClaim, miningClicksToday, miningLastDate, collection: Array.from(collectionMap.keys()), usedDecksReward: Array.from(usedDecksReward), eventCurrency, currentLevel, currentExp }; localStorage.setItem("bloody_game", JSON.stringify(save)); }
+    function loadGame() { let raw = localStorage.getItem("bloody_game"); if(!raw) return; try{ let d = JSON.parse(raw); crystals = d.crystals??40; shards = d.shards??0; ore = d.ore??0; dailyLastClaim = d.dailyLastClaim??null; miningClicksToday = d.miningClicksToday??0; miningLastDate = d.miningLastDate??new Date().toDateString(); usedDecksReward = new Set(d.usedDecksReward||[]); eventCurrency = d.eventCurrency || { spring:5, halloween:0, newyear:0, summer:0 }; currentLevel = d.currentLevel||1; currentExp = d.currentExp||0; collectionMap.clear(); if(d.collection) d.collection.forEach(id=>{ let card = DISPLAY_CARDS.find(c=>c.id===id); if(card) collectionMap.set(id,{cardData:card,animated:false}); }); }catch(e){ console.warn(e); } }
+    function showToast(msg) { let t=document.createElement("div"); t.innerText=msg; t.style.position="fixed"; t.style.bottom="70px"; t.style.left="20px"; t.style.right="20px"; t.style.backgroundColor="#ff3366"; t.style.padding="12px"; t.style.borderRadius="40px"; t.style.zIndex="999"; t.style.textAlign="center"; t.style.fontWeight="bold"; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
+    function closeMenu() { document.getElementById("sideMenu").classList.remove("open"); document.getElementById("menuOverlay").classList.remove("active"); }
+    function openMenu() { document.getElementById("sideMenu").classList.add("open"); document.getElementById("menuOverlay").classList.add("active"); }
+    
+    document.getElementById("burgerBtn").onclick = openMenu; document.getElementById("menuOverlay").onclick = closeMenu;
+    document.getElementById("modalCloseBtn").onclick = closeModal; document.getElementById("imageModal").addEventListener("click", (e) => { if(e.target === document.getElementById("imageModal")) closeModal(); });
+    document.querySelectorAll(".menu-item").forEach(item=>{ item.addEventListener("click",()=>{ let tab=item.dataset.tab; if(tab === 'event' && !eventActive) { const nextSeason = getNextSeasonInfo(); showToast(`🔒 Ивент недоступен! Следующий сезон "${nextSeason.name}" начнётся ${nextSeason.date}`); return; } document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active")); document.getElementById(`tab-${tab}`)?.classList.add("active"); closeMenu(); }); });
+    
+    window.onload = () => { 
+        loadGame(); renderCatalogOnce(); renderCollectionOnce(); renderDecks(); setupCollectionFilter();
+        document.getElementById("dailyBtn")?.addEventListener("click",dailyBonus); document.getElementById("mineBtn")?.addEventListener("click",mine); document.getElementById("exchangeBtn")?.addEventListener("click",exchangeOre); 
+        document.getElementById("buyPackBtn")?.addEventListener("click",buyPack); document.getElementById("confirmChoiceBtn")?.addEventListener("click",confirmPackChoice); 
+        document.getElementById("eventPackBtn")?.addEventListener("click",buyEventPack); document.getElementById("confirmEventBtn")?.addEventListener("click",confirmEventChoice); 
+        updateStatsOnly(); document.querySelector(".menu-item[data-tab='profile']").click(); setInterval(() => { updateDailyTimer(); updateEventTimer(); }, 1000); 
+    };
+</script>
 </body>
 </html>
